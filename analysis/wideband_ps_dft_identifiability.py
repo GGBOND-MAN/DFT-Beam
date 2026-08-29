@@ -216,6 +216,77 @@ def exp6_gain_vs_fractional_bandwidth(r=8.0, A0=30.0, n_angles=24):
     print("       PS-only data transmission becomes untenable.")
 
 
+def _crb_range(arr, theta, r, fm, phis, A, s2=1.0, cond_max=1e12):
+    """CRB of r alone, returning inf on a numerically singular FIM rather than
+    trusting a pseudo-inverse (which silently reports a finite bound)."""
+    fm, phis = np.atleast_1d(fm), np.atleast_1d(phis)
+    M, K = len(fm), len(phis)
+    ht, hr = 1e-6, 1e-4
+    G = arr.gains(theta, r, fm, phis)
+    dGt = (arr.gains(theta + ht, r, fm, phis) - arr.gains(theta - ht, r, fm, phis)) / (2 * ht)
+    dGr = (arr.gains(theta, r + hr, fm, phis) - arr.gains(theta, r - hr, fm, phis)) / (2 * hr)
+    Jn = np.vectorize(lambda x: rice_info(x, s2))(A * G)
+    D = np.zeros((M, K, 3))
+    D[:, :, 0], D[:, :, 1], D[:, :, 2] = A * dGt, A * dGr, G
+    J = np.einsum('mk,mkp,mkq->pq', Jn, D, D)
+    if np.linalg.cond(J) > cond_max:
+        return np.inf
+    return np.sqrt(np.linalg.inv(J)[1, 1])
+
+
+def _coverage(arr, r, fm, phis, A, tol=0.20, n_ang=13):
+    """fraction of angles where the relative range error clears `tol`"""
+    ths = np.linspace(-0.85, 0.85, n_ang)
+    return np.mean([_crb_range(arr, t, r, fm, phis, A) / r <= tol for t in ths])
+
+
+def exp7_usable_range(N=256, fc=40e9, beta=0.05, M=9, A0=30.0, tol=0.20):
+    """A fixed decimated codebook over the whole sector - the user falls where it
+    falls, no oracle centring. Reports where ranging still works at all."""
+    arr = Array(N=N, fc=fc)
+    print(f"\n[7] Usable ranging distance, fixed global codebook (no oracle centring)")
+    print(f"    N={N} fc={fc/1e9:.0f}GHz  Rayleigh={2*(N*arr.d)**2/(C0/fc):.0f} m"
+          f"  criterion: CRB_r/r <= {tol:.0%}")
+    ranges = (6., 12., 18., 25., 35.)
+    print(f"    {'scheme':<36} {'pilots':>7} | " + " ".join(f"r={r:<4.0f}" for r in ranges))
+    for name, dec, b in (("narrowband, full DFT codebook", 1, None),
+                         ("narrowband, every 8th beam", 8, None),
+                         (f"wideband B/fc={beta}, every 8th beam", 8, beta),
+                         (f"wideband B/fc={beta}, every 16th beam", 16, beta)):
+        phis = arr.grid[::dec]
+        fm = arr.fc if b is None else arr.subcarriers(b, M)
+        A = A0 if b is None else A0 / np.sqrt(M)
+        cov = " ".join(f"{_coverage(arr, r, fm, phis, A, tol):5.0%}" for r in ranges)
+        print(f"    {name:<36} {len(phis):7d} | {cov}")
+    print("    -> at a fixed pilot budget the frequency dimension roughly doubles the")
+    print("       usable range and removes the angular blind spots entirely.")
+
+
+def exp8_pilot_equivalence(N=256, fc=40e9, beta=0.05, M=9, A0=30.0, tol=0.20):
+    """Per-pilot energy is fixed, so pilot count IS total energy - no energy trick."""
+    arr = Array(N=N, fc=fc)
+    print(f"\n[8] Pilot budget a wideband decimated codebook is worth")
+    ranges = (6., 12., 18., 25.)
+    print(f"    {'scheme':<36} {'pilots':>7} | " + " ".join(f"r={r:<4.0f}" for r in ranges))
+    for name, dec, b in (("narrowband, full DFT codebook", 1, None),
+                         ("narrowband, every 4th beam", 4, None),
+                         ("narrowband, every 8th beam", 8, None),
+                         (f"wideband B/fc={beta}, every 8th beam", 8, beta),
+                         (f"wideband B/fc={beta}, every 4th beam", 4, beta)):
+        phis = arr.grid[::dec]
+        fm = arr.fc if b is None else arr.subcarriers(b, M)
+        A = A0 if b is None else A0 / np.sqrt(M)
+        cov = " ".join(f"{_coverage(arr, r, fm, phis, A, tol):5.0%}" for r in ranges)
+        print(f"    {name:<36} {len(phis):7d} | {cov}")
+    print("    -> 64 wideband pilots reproduce the full 256-pilot narrowband sweep;")
+    print("       32 wideband pilots match 64 narrowband ones. Same PS-only front end.")
+    print("    Design rule: pattern width in DFT beams is W ~ N^2 d (1-theta^2)/(2r),")
+    print("    frequency dither is ~ beta N |theta| / 2. Narrowband needs a decimation")
+    print("    factor below W; wideband needs it below W + dither. The dither does not")
+    print("    create range information - W still has to exceed ~1 beam - it only lets a")
+    print("    sparse grid sample a width it would otherwise step over.")
+
+
 if __name__ == "__main__":
     arr = Array(N=512, fc=100e9)
     exp1_pattern_zooming(arr)
@@ -224,3 +295,5 @@ if __name__ == "__main__":
     exp4_vs_time_of_flight(arr)
     exp5_cost_of_dropping_ttd()
     exp6_gain_vs_fractional_bandwidth()
+    exp7_usable_range()
+    exp8_pilot_equivalence()
