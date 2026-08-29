@@ -172,9 +172,55 @@ def exp4_vs_time_of_flight(arr, theta=0.5, r=8.0, K=8, stride=8, A0=30.0):
     print("       not presented as a free modelling choice.")
 
 
+def exp5_cost_of_dropping_ttd(theta=0.5, r=8.0, M=65):
+    """What PS-only actually costs, with perfect CSI on both sides.
+    This loss is intrinsic to the front end - no estimator can recover it."""
+    print("\n[5] Data-transmission ceiling: PS-only focusing vs per-subcarrier (TTD)")
+    print(f"    {'N':>5} {'fc':>6} {'B/fc':>6} {'PS gain':>9} {'TTD gain':>9} {'loss dB':>8}")
+    for N, fc in ((256, 40e9), (512, 100e9), (1024, 100e9)):
+        arr = Array(N=N, fc=fc)
+        for beta in (0.05, 0.10, 0.20):
+            fm = arr.subcarriers(beta, M)
+            rn = np.sqrt(r**2 + (arr.dn*arr.d)**2 - 2*r*theta*arr.dn*arr.d)
+            H = np.exp(-1j*2*np.pi*np.outer(fm, rn - r)/C0)/np.sqrt(N)
+            v = np.exp(-1j*2*np.pi*arr.fc*(rn - r)/C0)/np.sqrt(N)      # designed at f_c, reused
+            g_ps = np.mean(np.abs(H @ v.conj())**2)*N
+            g_td = N                                                    # per-subcarrier matched
+            print(f"    {N:5d} {fc/1e9:5.0f}G {beta:6.2f} {g_ps:9.1f} {g_td:9.1f} "
+                  f"{10*np.log10(g_td/g_ps):8.2f}")
+    print("    -> the PS-only gain saturates at O(1/beta) and stops growing with N.")
+    print("       An XL-array buys nothing in a wideband PS-only data link.")
+
+
+def exp6_gain_vs_fractional_bandwidth(r=8.0, A0=30.0, n_angles=24):
+    """Does the sparse-codebook gain need a large bandwidth? (It does not.)"""
+    print("\n[6] Robustness gain vs fractional bandwidth (median / 90th pct over angles)")
+    for N, fc in ((256, 40e9), (512, 100e9)):
+        arr = Array(N=N, fc=fc)
+        for K, stride in ((16, 4), (8, 8)):
+            print(f"    N={N} fc={fc/1e9:.0f}GHz K={K} stride={stride}")
+            for beta in (0.02, 0.05, 0.10, 0.20):
+                pairs = []
+                for th in np.linspace(-0.85, 0.85, n_angles):
+                    phis = arr.peak_beam(th, r) + stride*(np.arange(K) - K//2)*2/N
+                    _, nb = crb_amplitude_only(arr, th, r, arr.fc, phis, A0)
+                    _, wb = crb_amplitude_only(arr, th, r, arr.subcarriers(beta, 9),
+                                               phis, A0/np.sqrt(9))
+                    pairs.append((nb, wb))
+                nb, wb = np.array([p[0] for p in pairs]), np.array([p[1] for p in pairs])
+                print(f"      B/fc={beta:4.2f} | median {np.median(nb):7.3f}->{np.median(wb):6.3f}"
+                      f" ({np.median(nb)/np.median(wb):4.2f}x) | p90 {np.percentile(nb,90):7.3f}"
+                      f"->{np.percentile(wb,90):6.3f} ({np.percentile(nb,90)/np.percentile(wb,90):5.2f}x)")
+    print("    -> the gain saturates by B/fc ~ 0.02 and is driven by the tail, not the median.")
+    print("       It therefore does NOT require the large fractional bandwidth at which")
+    print("       PS-only data transmission becomes untenable.")
+
+
 if __name__ == "__main__":
     arr = Array(N=512, fc=100e9)
     exp1_pattern_zooming(arr)
     exp2_dense_vs_sparse(arr)
     exp3_subcarrier_count(arr)
     exp4_vs_time_of_flight(arr)
+    exp5_cost_of_dropping_ttd()
+    exp6_gain_vs_fractional_bandwidth()
