@@ -75,11 +75,11 @@ for s = 1:numel(schemes)
     fprintf('   outlier    : %s\n', sprintf('%6.0f%%', 100*orate));
     fprintf('   RMSE_r  m  : %s\n', sprintf('%7.3f', rmse));
     fprintf('   CRB_r   m  : %s\n', sprintf('%7.3f', crb));
-    if min(orate) <= 0.10 && max(orate) >= 0.10
-        th = interp1(orate(end:-1:1), pk(end:-1:1), 0.10);
-        fprintf('   -> 10%%-outlier threshold = %.1f dB\n\n', th);
-    else
+    th = crossing(pk, orate, 0.10);
+    if isnan(th)
         fprintf('   -> NOT bracketed (min outlier %.0f%%) - widen A0list\n\n', 100*min(orate));
+    else
+        fprintf('   -> 10%%-outlier threshold = %.1f dB\n\n', th);
     end
 end
 save('threshold_mc.mat','R','theta0','r0','NR','beta','M');
@@ -94,6 +94,18 @@ set(gca,'YScale','log'); xlabel('peak SNR (dB)'); ylabel('range RMSE (m)');
 legend('Location','southwest'); title('solid: estimator, dashed: CRB');
 
 % ---------------------------------------------------------------- helpers
+
+function th = crossing(pk, orate, level)
+%CROSSING  SNR at which the outlier rate first falls to `level`.
+%   interp1 over the whole curve fails here: the outlier rate saturates at 0
+%   and 1, so its samples are not unique. Interpolate only inside the
+%   bracketing pair instead.
+th = NaN;
+i = find(orate <= level, 1, 'first');
+if isempty(i), return; end
+if i == 1, th = pk(1); return; end          % already below at the lowest SNR
+th = interp1(orate([i i-1]), pk([i i-1]), level);
+end
 
 function y = steer_complex(a, theta, r, fm, phis)
 fm = fm(:); phis = phis(:);

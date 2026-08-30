@@ -58,13 +58,24 @@ end
 
 function [Wb, Cb] = pattern(a, theta, r, fm, phis, thr)
 %PATTERN  measured half-max support width and centre, in DFT-beam units.
+%
+%   Width is the COUNT of codewords above the threshold, not the span between
+%   the outermost ones. The two differ by one, and the count is what the
+%   sampling rule of THEORY.md needs: how many beams actually land on the
+%   pattern. Measuring the span instead makes a one-beam pattern report zero
+%   width and biases the measured/predicted ratio low by (n-1)/n.
+%
+%   Caveat: the width is quantised to whole beams, so the eta_m scaling of
+%   Proposition 2 (a beta/2 = 2.5% effect, i.e. +-0.25 beams on a 10-beam
+%   pattern) is BELOW the resolution of this measurement and cannot be seen
+%   here. Only the centre scaling, which moves several beams, is testable.
 if nargin < 6, thr = 0.5; end
 G = gain(a, theta, r, fm, phis);
 Wb = zeros(size(G,1),1); Cb = zeros(size(G,1),1);
 for m = 1:size(G,1)
-    s = phis(G(m,:) > thr*max(G(m,:)));
-    Wb(m) = (max(s) - min(s))/(2/a.N);
-    Cb(m) = mean(s)/(2/a.N);
+    keep = G(m,:) > thr*max(G(m,:));
+    Wb(m) = sum(keep);
+    Cb(m) = mean(phis(keep))/(2/a.N);
 end
 end
 
