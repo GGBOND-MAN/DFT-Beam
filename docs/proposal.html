@@ -209,9 +209,9 @@ a{color:var(--accent)}
   <h1>无 TTD 宽带近场波束训练：用子载波分辨幅度换取 DFT 码本抽稀</h1>
   <p class="thesis">
     设想是：保留每个 OFDM 子载波的 DFT 波束幅度，利用图样相对固定码本栅格的自然频率抖动，
-    把码本抽稀 4 倍，不增加任何 TTD。<b>该设想在端到端仿真中未获支持</b>——
-    解析层面成立，但真实估计器下不兑现。本文档记录完整的证据链与失败机理，
-    并给出仍有价值的剩余路径。
+    把码本抽稀，不增加任何 TTD。<b>原主张（追平全码本扫描）不成立</b>；
+    但把子载波数从 9 改到 3–5 后，<b>在 r ≲ 12 m 上比等导频窄带高约 15 个百分点</b>。
+    本文档记录完整证据链、四次「CRB 支持而端到端不兑现」的失败机理，与收窄后的主张。
   </p>
   <div class="meta">
     <span><b>阵列</b> ULA N=256</span>
@@ -229,19 +229,19 @@ a{color:var(--accent)}
     <div class="d">缩放映射、抖动、采样规则、导频节省预测，均经数值验证</div>
   </div>
   <div class="stat gone">
-    <div class="n">3</div>
-    <div class="k">已撤回的结论</div>
-    <div class="d">门限增益、其预测子、覆盖率增益——全部在真实估计器下不兑现</div>
+    <div class="n">4</div>
+    <div class="k">被端到端推翻的 CRB 结论</div>
+    <div class="d">门限增益、其预测子、覆盖率增益、最优子载波数</div>
   </div>
-  <div class="stat gone">
-    <div class="n">19<span style="font-size:18px">%</span></div>
-    <div class="k">实测覆盖率（r=18 m）</div>
-    <div class="d">CRB 曾预测 100%；等导频窄带为 34%</div>
+  <div class="stat ok">
+    <div class="n">+15<span style="font-size:18px">pt</span></div>
+    <div class="k">收窄后的增益</div>
+    <div class="d">M=3–5，r ≲ 12 m，对等导频窄带；1.5–2σ，待更多角度确认</div>
   </div>
   <div class="stat wait">
-    <div class="n">2</div>
+    <div class="n">1</div>
     <div class="k">剩余路径</div>
-    <div class="d">子载波数 M 的重新选择；转向多径场景</div>
+    <div class="d">若收窄主张站不住，转向多径场景</div>
   </div>
 </div>
 
@@ -405,6 +405,45 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
       CRB 预测 18 m 处 100% 对 36%，实测 19% 对 34%——<b>优势不是缩小，是反向</b>。
     </p>
   </div>
+
+  <h3>部分挽回：子载波数选错了</h3>
+  <p>
+    崩塌的假设是<b>非相干合并损失</b>——等能量下摊到 M 个子载波，每样本信噪比降低
+    10log₁₀M，而幅度（非相干）估计在低信噪比处劣化很快。抖动 Δ 与 M 无关，
+    但采样间隙 <code>g = max(dec−Δ, Δ/(M−1))</code> 随 M 减小而变差，因此存在真实折衷。
+    固定 64 导频与总能量、只改 M：
+  </p>
+
+  <div class="tw">
+    <table>
+      <caption>覆盖率，profile 幅度 LS，13 角度 × 100 次，判据 |r̂−r|/r ≤ 20%</caption>
+      <thead><tr>
+        <th>距离 r</th><th class="num">M=1（窄带）</th><th class="num">M=3</th>
+        <th class="num">M=5</th><th class="num">M=9（原设定）</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="num">8 m</td><td class="num">71%</td><td class="num hi">84%</td>
+            <td class="num">81%</td><td class="num lo">69%</td></tr>
+        <tr><td class="num">12 m</td><td class="num">36%</td><td class="num">52%</td>
+            <td class="num hi">53%</td><td class="num lo">38%</td></tr>
+        <tr><td class="num">18 m</td><td class="num hi">34%</td><td class="num">29%</td>
+            <td class="num">28%</td><td class="num lo">19%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note ok">
+    <span class="lab">收窄后的主张</span>
+    <p>
+      等导频、等能量下取 <b>M = 3–5</b>，在 <b>r ≲ 12 m</b> 上比窄带稀疏码本
+      <b>提高约 15 个百分点</b>的覆盖率；更远处无优势。M=9 在所有距离上都是最差的一档。
+    </p>
+    <p style="margin-top:10px; color:var(--ink-3); font-size:14px">
+      显著性保留：同一角度内的试验共享同一实现，有效样本数接近 13 个角度组而非 1300 次试验，
+      均值标准差约 8 个百分点，故 13–17 点的差距约为 1.5–2σ。方向明确但未达强显著，
+      33 角度的确认运行进行中。
+    </p>
+  </div>
 </section>
 
 <section>
@@ -509,45 +548,50 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
 </section>
 
 <section>
-  <h2><span class="num">06</span>剩余路径</h2>
-  <p class="sub">原计划的第一步已执行并证伪，以下按仍存的可能性排序 <span class="chip wait">待验证</span></p>
+  <h2><span class="num">06</span>下一步</h2>
+  <p class="sub">按「先确认收窄主张、再决定是否转向」排序 <span class="chip wait">待完成</span></p>
 
   <ol class="plan">
     <li>
       <div class="w">进行中</div>
       <div>
-        <div class="b">重新选择子载波数 M</div>
+        <div class="b">收窄主张的显著性确认</div>
         <div class="d">
-          失败可能来自<b>非相干合并损失</b>：等能量下把功率摊到 9 个子载波，
-          每个样本的信噪比降低，而幅度（非相干）估计在低信噪比处劣化很快。
-          抖动量 Δ 只取决于 β 与 θ、与 M 无关，但采样间隙
-          <code>g = max(dec−Δ, Δ/(M−1))</code> 随 M 减小而变差，
-          因此存在真实的折衷与可能的内点最优。正在对 M = 1, 3, 5, 9 做等能量对比。
-          <b>这是唯一一条能救回原设想的路径。</b>
+          把角度数从 13 提到 33，给出跨角度的标准误。当前 15 个百分点的差距只有 1.5–2σ，
+          不足以支撑论文主结果。<b>这一步不过关，收窄主张也站不住。</b>
+        </div>
+      </div>
+    </li>
+    <li>
+      <div class="w">若确认</div>
+      <div>
+        <div class="b">与 Zhou 2026 的端到端开销对比</div>
+        <div class="d">
+          复现其三阶段方案（77 导频，其中约 61 用于极坐标测距），
+          在同一 (θ, r) 网格、同一能量下比较可达速率与角距 RMSE。
+          注意收窄后的适用区间只到 r ≈ 12 m，须与该文的仿真设置对齐。
         </div>
       </div>
     </li>
     <li>
       <div class="w">备选</div>
       <div>
-        <div class="b">改用精确 Rician MLE 替代 profile 最小二乘</div>
+        <div class="b">M 的解析选择准则</div>
         <div class="d">
-          当前估计器在门限之上确实达到 CRB（RMSE/CRB = 0.9–1.2），
-          所以差距不太可能全部来自估计器效率。CRB 预测 100%、实测 19%，
-          这个量级用估计器改进补不回来。<b>成功概率低。</b>
+          现有的 M 最优值是扫出来的。若能从非相干合并损失与采样间隙的折衷推出闭式，
+          可作为一个独立的理论贡献——尤其因为 CRB 给出的最优值（M≈9）是错的。
         </div>
       </div>
     </li>
     <li>
-      <div class="w">转向</div>
+      <div class="w">若不确认</div>
       <div>
-        <div class="b">多径场景</div>
+        <div class="b">转向多径场景</div>
         <div class="d">
-          这是唯一让频率维提供<b>真正新信息</b>的场景。命题 1 说明单径下频率维只是已知的
-          重参数化——这正是本次失败的根源。但多径下不同路径以不同速率相对固定栅格缩放，
-          中心频率上重叠的图样在其他子载波上可能分离，<b>路径分离不是单径图样的重参数化</b>，
-          不受该限制。Wu 2024 明确把多径留作 future work，Wang 2026 只处理 LoS 主导，
-          Pattern Zooming 推到讨论节。工作量大，但天花板最高，且不重复本次的错误前提。
+          命题 1 只对单径成立——这正是本次失败的根源：单径下频率维只是已知的重参数化。
+          多径下不同路径以不同速率相对固定栅格缩放，<b>路径分离不是单径图样的重参数化</b>，
+          不受该限制。Wu 2024 明确留作 future work，Wang 2026 只处理 LoS 主导，
+          Pattern Zooming 推到讨论节。工作量大，天花板最高。
         </div>
       </div>
     </li>
@@ -556,10 +600,10 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
   <div class="note wait">
     <span class="lab">方法论教训</span>
     <p>
-      本次三条主张全部先由 CRB 支持、再被真实估计器推翻。
-      后续工作应<b>先做端到端估计器仿真，CRB 只作为辅助分析</b>，
-      而不是反过来。同时任何结论都必须在整个 (θ, r) 平面、
-      在对两方案中性的横轴上复核——单点结果与 peak SNR 横轴各害了一次。
+      四条主张全部先由 CRB 支持、再被真实估计器推翻，包括最优子载波数本身。
+      后续应<b>先做端到端估计器仿真，CRB 只作辅助分析</b>。
+      同时任何结论都必须在整个 (θ, r) 平面、在对两方案中性的横轴上复核——
+      单点结果与 peak SNR 横轴各害了一次。
     </p>
   </div>
 </section>
@@ -568,18 +612,18 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
   <h2><span class="num">07</span>结论</h2>
   <p class="sub">给导师的一句话</p>
   <p>
-    「无 TTD + 子载波分辨幅度 + 稀疏 DFT 码本」这一设想的<b>解析部分完全成立</b>——
-    缩放映射、栅格抖动、采样规则、导频节省预测都经过验证；
-    但它<b>不能转化为可用的波束训练方案</b>：真实估计器下，宽带方案从未超过等导频的窄带方案，
-    远距离处显著更差。
+    解析部分完全成立——缩放映射、栅格抖动、采样规则、导频节省预测都经过验证。
+    但<b>原主张（宽带稀疏码本追平全码本扫描）在端到端仿真中不成立</b>。
   </p>
   <p>
     根本原因在命题 1：单径条件下频率维不产生新的物理观测量，只是同一图样的已知重参数化。
-    它能改善局部可辨识性（CRB），但不能改善野值行为，而稀疏码本恰恰是野值受限的。
+    它改善局部可辨识性（CRB），不改善野值行为，而稀疏码本恰恰是野值受限的。
   </p>
   <p>
-    <b>建议</b>：等 M 的重新选择结果；若仍不成立，转向多径场景——那里频率维提供的是真正的新信息，
-    且不受本次失败的前提约束。
+    把子载波数从 9 改到 3–5 后，<b>在 r ≲ 12 m 上恢复了约 15 个百分点的优势</b>，
+    但显著性只有 1.5–2σ，确认运行进行中。
+    <b>建议</b>：以该确认结果为分岔点——过关则按收窄主张推进并与 Zhou 2026 正面对比；
+    不过关则转向多径，那里频率维提供的是真正的新信息。
   </p>
 </section>
 
