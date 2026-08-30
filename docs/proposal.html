@@ -208,9 +208,10 @@ a{color:var(--accent)}
   <p class="eyebrow">选题文档 · 待与导师讨论</p>
   <h1>无 TTD 宽带近场波束训练：用子载波分辨幅度换取 DFT 码本抽稀</h1>
   <p class="thesis">
-    已有宽带方案要么用 TTD 主动扫频，要么把子载波功率求和后丢掉频率维。
-    本课题<b>保留每个 OFDM 子载波的 DFT 波束幅度</b>，利用图样相对固定码本栅格的自然频率抖动，
-    把码本抽稀 4 倍——<b>不增加任何 TTD，也不需要极坐标近场码本</b>。
+    设想是：保留每个 OFDM 子载波的 DFT 波束幅度，利用图样相对固定码本栅格的自然频率抖动，
+    把码本抽稀 4 倍，不增加任何 TTD。<b>该设想在端到端仿真中未获支持</b>——
+    解析层面成立，但真实估计器下不兑现。本文档记录完整的证据链与失败机理，
+    并给出仍有价值的剩余路径。
   </p>
   <div class="meta">
     <span><b>阵列</b> ULA N=256</span>
@@ -223,24 +224,24 @@ a{color:var(--accent)}
 
 <div class="board">
   <div class="stat ok">
-    <div class="n">4×</div>
-    <div class="k">导频与能量节省</div>
-    <div class="d">64 宽带导频在 r ≤ 18 m 上完全追平 256 导频全扫描</div>
-  </div>
-  <div class="stat ok">
-    <div class="n">0</div>
-    <div class="k">TTD 数量</div>
-    <div class="d">对标方案需每天线一个 TTD</div>
+    <div class="n">4</div>
+    <div class="k">成立的解析结果</div>
+    <div class="d">缩放映射、抖动、采样规则、导频节省预测，均经数值验证</div>
   </div>
   <div class="stat gone">
-    <div class="n">2</div>
+    <div class="n">3</div>
     <div class="k">已撤回的结论</div>
-    <div class="d">门限增益与其预测子，均因口径错误撤回</div>
+    <div class="d">门限增益、其预测子、覆盖率增益——全部在真实估计器下不兑现</div>
+  </div>
+  <div class="stat gone">
+    <div class="n">19<span style="font-size:18px">%</span></div>
+    <div class="k">实测覆盖率（r=18 m）</div>
+    <div class="d">CRB 曾预测 100%；等导频窄带为 34%</div>
   </div>
   <div class="stat wait">
-    <div class="n">3</div>
-    <div class="k">待补工作</div>
-    <div class="d">多径、UPA、真实估计器的平面验证</div>
+    <div class="n">2</div>
+    <div class="k">剩余路径</div>
+    <div class="d">子载波数 M 的重新选择；转向多径场景</div>
   </div>
 </div>
 
@@ -358,8 +359,8 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
 </section>
 
 <section>
-  <h2><span class="num">03</span>核心结果</h2>
-  <p class="sub">等发射能量口径，整个距离范围，25 个角度 <span class="chip ok">已验证</span></p>
+  <h2><span class="num">03</span>核心主张及其证伪</h2>
+  <p class="sub">CRB 支持，真实估计器不支持 <span class="chip gone">已撤回</span></p>
 
   <div class="note ok">
     <span class="lab">公平性约定</span>
@@ -371,29 +372,39 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
 
   <div class="tw">
     <table>
-      <caption>覆盖率 = 满足 CRB<sub>r</sub>/r ≤ 20% 的角度比例</caption>
+      <caption>
+        左三列为 CRB 预测（CRB<sub>r</sub>/r ≤ 20% 的角度比例）；
+        右三列为真实估计器的实现误差（|r̂−r|/r ≤ 20% 的试验比例，13 角度 × 100 次）
+      </caption>
       <thead><tr>
         <th>距离 r</th>
-        <th class="num">窄带 256 导频</th>
-        <th class="num">窄带 64 导频</th>
-        <th class="num">宽带 64 导频</th>
+        <th class="num">CRB<br>NB-256</th><th class="num">CRB<br>NB-64</th><th class="num">CRB<br>WB-64</th>
+        <th class="num">实测<br>NB-256</th><th class="num">实测<br>NB-64</th><th class="num">实测<br>WB-64</th>
       </tr></thead>
       <tbody>
-        <tr><td class="num">6 m</td><td class="num">100%</td><td class="num">96%</td><td class="num hi">100%</td></tr>
-        <tr><td class="num">8 m</td><td class="num">100%</td><td class="num">88%</td><td class="num hi">100%</td></tr>
-        <tr><td class="num">12 m</td><td class="num">100%</td><td class="num">68%</td><td class="num hi">100%</td></tr>
-        <tr><td class="num">18 m</td><td class="num">100%</td><td class="num">36%</td><td class="num hi">100%</td></tr>
-        <tr><td class="num">25 m</td><td class="num">92%</td><td class="num">8%</td><td class="num hi">88%</td></tr>
-        <tr><td class="num">35 m</td><td class="num">92%</td><td class="num">0%</td><td class="num lo">56%</td></tr>
+        <tr><td class="num">6 m</td><td class="num">100%</td><td class="num">96%</td><td class="num">100%</td>
+            <td class="num">100%</td><td class="num">84%</td><td class="num">85%</td></tr>
+        <tr><td class="num">8 m</td><td class="num">100%</td><td class="num">88%</td><td class="num">100%</td>
+            <td class="num">100%</td><td class="num">71%</td><td class="num lo">69%</td></tr>
+        <tr><td class="num">12 m</td><td class="num">100%</td><td class="num">68%</td><td class="num">100%</td>
+            <td class="num">98%</td><td class="num">36%</td><td class="num">38%</td></tr>
+        <tr><td class="num">18 m</td><td class="num">100%</td><td class="num">36%</td><td class="num">100%</td>
+            <td class="num">90%</td><td class="num">34%</td><td class="num lo">19%</td></tr>
+        <tr><td class="num">25 m</td><td class="num">92%</td><td class="num">8%</td><td class="num">88%</td>
+            <td class="num">62%</td><td class="num">20%</td><td class="num lo">1%</td></tr>
       </tbody>
     </table>
   </div>
 
-  <p>
-    <b>r ≤ 18 m 时宽带 64 导频完全追平窄带 256 导频全扫描</b>，25 m 接近，35 m 开始掉队；
-    对同样 64 导频的窄带则全程压倒（18 m 处 100% 对 36%）。
-    适用区间约为 <b>Fresnel 距离到 Rayleigh/10</b>。
-  </p>
+  <div class="note gone">
+    <span class="lab">主张不成立</span>
+    <p>
+      CRB 预测宽带 64 导频在 r ≤ 18 m 完全追平 256 导频全扫描。
+      真实估计器下它<b>从未超过等导频的窄带方案</b>（85/84、69/71、38/36），
+      远距离处大幅更差（18 m：19% 对 34%；25 m：1% 对 20%）。
+      CRB 预测 18 m 处 100% 对 36%，实测 19% 对 34%——<b>优势不是缩小，是反向</b>。
+    </p>
+  </div>
 </section>
 
 <section>
@@ -426,17 +437,37 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
     </p>
   </div>
 
+  <div class="note gone">
+    <span class="lab">撤回三 · 覆盖率增益</span>
+    <p>
+      即第 03 节。与前两次同一形状：结论由 CRB 支撑，换成真实估计器后不兑现。
+    </p>
+  </div>
+
+  <div class="note gone">
+    <span class="lab">三次崩塌的统一解释</span>
+    <p>
+      <b>频率维改善局部界（CRB），但不改善野值行为；而稀疏码本在该信噪比下是野值受限的，
+      于是界从未兑现。</b>
+    </p>
+    <p>
+      与 E<sub>eff</sub> 的失效诊断一致：抖动增加的是「落在图样上」的样本，
+      而抗野值能力来自那些断言「图样不在这里」的零样本——密集码本靠后者取胜，
+      抽稀恰好把它们删掉了。
+    </p>
+  </div>
+
   <p>理论链条的当前状态：</p>
   <div class="chain">
     <div class="step ok"><span class="t">成立</span>缩放映射</div>
     <div class="step ok"><span class="t">成立</span>抖动 Δ</div>
     <div class="step ok"><span class="t">成立</span>采样间隙 g</div>
-    <div class="step ok"><span class="t">成立</span>导频节省</div>
-    <div class="step gone"><span class="t">断开</span>野值门限</div>
+    <div class="step ok"><span class="t">成立</span>导频节省（CRB）</div>
+    <div class="step gone"><span class="t">断开</span>端到端性能</div>
   </div>
   <p>
-    几何与采样层面可靠，统计与门限层面目前只有实测。
-    这一断点应当写进论文的局限章节，而不是回避。
+    <b>几何与采样层面全部成立且经数值验证；断点在「局部信息 → 可用方案」这一步。</b>
+    解析结果描述的是几何与局部可辨识性，不足以支撑一个端到端可用的波束训练方案。
   </p>
 </section>
 
@@ -478,72 +509,77 @@ saving = dec / max(g, 1)　　 <span class="c">上限 dec：图样带限，采�
 </section>
 
 <section>
-  <h2><span class="num">06</span>工作计划</h2>
-  <p class="sub">按「先证伪最可能塌的一环」排序 <span class="chip wait">待完成</span></p>
+  <h2><span class="num">06</span>剩余路径</h2>
+  <p class="sub">原计划的第一步已执行并证伪，以下按仍存的可能性排序 <span class="chip wait">待验证</span></p>
 
   <ol class="plan">
     <li>
-      <div class="w">第 1–2 周</div>
+      <div class="w">进行中</div>
       <div>
-        <div class="b">真实估计器在 (θ, r) 平面上的验证</div>
+        <div class="b">重新选择子载波数 M</div>
         <div class="d">
-          覆盖率结论目前由 CRB 支撑。CRB 是局部界，门限结论正是在这一点上塌掉的。
-          必须用 profile 幅度 LS 在整个平面复核，300 次/点。<b>这一环塌则方向不成立。</b>
+          失败可能来自<b>非相干合并损失</b>：等能量下把功率摊到 9 个子载波，
+          每个样本的信噪比降低，而幅度（非相干）估计在低信噪比处劣化很快。
+          抖动量 Δ 只取决于 β 与 θ、与 M 无关，但采样间隙
+          <code>g = max(dec−Δ, Δ/(M−1))</code> 随 M 减小而变差，
+          因此存在真实的折衷与可能的内点最优。正在对 M = 1, 3, 5, 9 做等能量对比。
+          <b>这是唯一一条能救回原设想的路径。</b>
         </div>
       </div>
     </li>
     <li>
-      <div class="w">第 3–4 周</div>
+      <div class="w">备选</div>
       <div>
-        <div class="b">与 Zhou 2026 的端到端开销对比</div>
+        <div class="b">改用精确 Rician MLE 替代 profile 最小二乘</div>
         <div class="d">
-          复现其三阶段方案（77 导频，其中约 61 用于极坐标测距），
-          在同一 (θ, r) 网格、同一能量下比较可达速率与角距 RMSE。这是论文的主结果表。
+          当前估计器在门限之上确实达到 CRB（RMSE/CRB = 0.9–1.2），
+          所以差距不太可能全部来自估计器效率。CRB 预测 100%、实测 19%，
+          这个量级用估计器改进补不回来。<b>成功概率低。</b>
         </div>
       </div>
     </li>
     <li>
-      <div class="w">第 5–6 周</div>
+      <div class="w">转向</div>
       <div>
-        <div class="b">粗搜索 + 子载波分辨精化的两阶段设计</div>
+        <div class="b">多径场景</div>
         <div class="d">
-          当前 64 导频是全扇区抽稀扫描。若先用 16 个宽波束定粗角，再在少数波束上做子载波分辨精化，
-          开销有望显著低于 77。<b>尚未验证，属提出而非结论。</b>
-        </div>
-      </div>
-    </li>
-    <li>
-      <div class="w">第 7–8 周</div>
-      <div>
-        <div class="b">门限统计量的解析刻画</div>
-        <div class="d">
-          需要一个计「判别性测量数」而非信号能量的量。理论价值高，但风险也高，
-          排在实证结果之后，不作为发表的前置条件。
-        </div>
-      </div>
-    </li>
-    <li>
-      <div class="w">后续</div>
-      <div>
-        <div class="b">多径与 UPA 扩展</div>
-        <div class="d">
-          多径是唯一能让频率维提供<b>真正新信息</b>的场景——不同路径以不同速率相对固定栅格缩放，
-          中心频率上重叠的图样在其他子载波上可能分离，不受命题 1 的限制。天花板最高，工作量也最大。
+          这是唯一让频率维提供<b>真正新信息</b>的场景。命题 1 说明单径下频率维只是已知的
+          重参数化——这正是本次失败的根源。但多径下不同路径以不同速率相对固定栅格缩放，
+          中心频率上重叠的图样在其他子载波上可能分离，<b>路径分离不是单径图样的重参数化</b>，
+          不受该限制。Wu 2024 明确把多径留作 future work，Wang 2026 只处理 LoS 主导，
+          Pattern Zooming 推到讨论节。工作量大，但天花板最高，且不重复本次的错误前提。
         </div>
       </div>
     </li>
   </ol>
+
+  <div class="note wait">
+    <span class="lab">方法论教训</span>
+    <p>
+      本次三条主张全部先由 CRB 支持、再被真实估计器推翻。
+      后续工作应<b>先做端到端估计器仿真，CRB 只作为辅助分析</b>，
+      而不是反过来。同时任何结论都必须在整个 (θ, r) 平面、
+      在对两方案中性的横轴上复核——单点结果与 peak SNR 横轴各害了一次。
+    </p>
+  </div>
 </section>
 
 <section>
-  <h2><span class="num">07</span>拟定题目</h2>
-  <p class="sub">中英文各一，供讨论</p>
-  <p style="font-family:Spectral,Georgia,serif; font-size:19px; line-height:1.55; color:var(--ink); max-width:60ch">
-    TTD-Free Wideband Near-Field Beam Training via Subcarrier-Resolved Amplitude
-    Measurements on a Sparse DFT Codebook
+  <h2><span class="num">07</span>结论</h2>
+  <p class="sub">给导师的一句话</p>
+  <p>
+    「无 TTD + 子载波分辨幅度 + 稀疏 DFT 码本」这一设想的<b>解析部分完全成立</b>——
+    缩放映射、栅格抖动、采样规则、导频节省预测都经过验证；
+    但它<b>不能转化为可用的波束训练方案</b>：真实估计器下，宽带方案从未超过等导频的窄带方案，
+    远距离处显著更差。
   </p>
-  <p style="font-family:Spectral,Georgia,serif; font-size:19px; line-height:1.7; color:var(--ink); max-width:52ch">
-    基于子载波分辨幅度观测的无 TTD 宽带近场稀疏 DFT 码本波束训练
+  <p>
+    根本原因在命题 1：单径条件下频率维不产生新的物理观测量，只是同一图样的已知重参数化。
+    它能改善局部可辨识性（CRB），但不能改善野值行为，而稀疏码本恰恰是野值受限的。
+  </p>
+  <p>
+    <b>建议</b>：等 M 的重新选择结果；若仍不成立，转向多径场景——那里频率维提供的是真正的新信息，
+    且不受本次失败的前提约束。
   </p>
 </section>
 
